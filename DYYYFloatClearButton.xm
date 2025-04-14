@@ -1,9 +1,3 @@
-/*
- * Tweak Name: 1KeyHideDYUI
- * Target App: com.ss.iphone.ugc.Aweme
- * Dev: @c00kiec00k 曲奇的坏品味🍻
- * iOS Version: 16.5
- */
 #import "DYYYManager.h"
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
@@ -23,6 +17,8 @@ static BOOL isInPlayInteractionVC = NO;
 // 计时器属性
 @property(nonatomic, strong) NSTimer *checkTimer;
 @property(nonatomic, strong) NSTimer *fadeTimer;
+// 新增属性：用于显示 GIF 动画
+@property(nonatomic, strong) UIImageView *gifImageView;
 // 方法声明
 - (void)resetFadeTimer;
 - (void)hideUIElements;
@@ -96,11 +92,11 @@ static void initTargetClassNames(void) {
 		self.backgroundColor = [UIColor clearColor];
 		self.layer.cornerRadius = frame.size.width / 2;
 		self.layer.masksToBounds = YES;
-		self.isElementsHidden = NO;
+		self.isElementsHidden = YES;  // 默认开启
 		self.hiddenViewsList = [NSMutableArray array];
         
         // 设置默认状态为半透明
-        self.originalAlpha = 1.0;  // 交互时为完全不透明
+        self.originalAlpha = 0.5;  // 交互时为完全1.0不透明
         self.alpha = 0.5;  // 初始为半透明
 		// 加载保存的锁定状态
 		[self loadLockState];
@@ -158,17 +154,76 @@ static void initTargetClassNames(void) {
 	self.isLocked = [[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYHideUIButtonLockState"];
 }
 - (void)loadIcons {
-	NSString *documentsPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-	NSString *iconPath = [documentsPath stringByAppendingPathComponent:@"DYYY/qingping.png"];
-	UIImage *customIcon = [UIImage imageWithContentsOfFile:iconPath];
-	if (customIcon) {
-		self.showIcon = customIcon;
-		self.hideIcon = customIcon;
-	} else {
-		[self setTitle:@"隐藏" forState:UIControlStateNormal];
-		[self setTitle:@"显示" forState:UIControlStateSelected];
-		self.titleLabel.font = [UIFont systemFontOfSize:10];
-	}
+    NSString *documentsPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *iconPath = [documentsPath stringByAppendingPathComponent:@"DYYY/qingping.gif"];
+
+    NSData *gifData = [NSData dataWithContentsOfFile:iconPath];
+    if (gifData) {
+        CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)gifData, NULL);
+        if (source) {
+            size_t frameCount = CGImageSourceGetCount(source);
+            NSMutableArray *images = [NSMutableArray array];
+            NSMutableArray *delays = [NSMutableArray array];
+            float totalDuration = 0.0;
+
+            for (size_t i = 0; i < frameCount; i++) {
+                CGImageRef imageRef = CGImageSourceCreateImageAtIndex(source, i, NULL);
+                if (imageRef) {
+                    UIImage *image = [UIImage imageWithCGImage:imageRef];
+                    [images addObject:image];
+                    CGImageRelease(imageRef);
+                }
+                NSDictionary *properties = (__bridge NSDictionary *)CGImageSourceCopyPropertiesAtIndex(source, i, NULL);
+                NSDictionary *gifProperties = properties[(__bridge NSString *)kCGImagePropertyGIFDictionary];
+                NSNumber *delayTime = gifProperties[(__bridge NSString *)kCGImagePropertyGIFUnclampedDelayTime];
+                if (delayTime) {
+                    [delays addObject:delayTime];
+                    totalDuration += [delayTime floatValue];
+                }
+            }
+            CFRelease(source);
+
+            if (images.count > 0) {
+                // 创建 GIF 动画
+                self.showIcon = [UIImage animatedImageWithImages:images duration:totalDuration];
+                self.hideIcon = self.showIcon;
+
+                // 初始化 gifImageView
+                if (!self.gifImageView) {
+                    self.gifImageView = [[UIImageView alloc] initWithFrame:self.bounds];
+                    self.gifImageView.contentMode = UIViewContentModeScaleAspectFit;
+                    self.gifImageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                    [self addSubview:self.gifImageView];
+                }
+                self.gifImageView.image = self.showIcon;
+
+                // 清除默认的 imageView 图像
+                [self setImage:nil forState:UIControlStateNormal];
+                [self setImage:nil forState:UIControlStateSelected];
+            } else {
+                // 回退到静态图片
+                UIImage *staticImage = [UIImage imageWithData:gifData];
+                if (staticImage) {
+                    self.showIcon = staticImage;
+                    self.hideIcon = staticImage;
+                    [self setImage:staticImage forState:UIControlStateNormal];
+                }
+            }
+        } else {
+            // 回退到静态图片
+            UIImage *staticImage = [UIImage imageWithData:gifData];
+            if (staticImage) {
+                self.showIcon = staticImage;
+                self.hideIcon = staticImage;
+                [self setImage:staticImage forState:UIControlStateNormal];
+            }
+        }
+    } else {
+        // 没有找到 GIF 文件，回退到文字
+        [self setTitle:@"🤡" forState:UIControlStateNormal];
+        [self setTitle:@"🤡" forState:UIControlStateSelected];
+        self.titleLabel.font = [UIFont systemFontOfSize:25];
+    }
 }
 - (void)handleTouchDown {
 	[self resetFadeTimer];  // 这会使按钮变为完全不透明

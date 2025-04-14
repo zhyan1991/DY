@@ -13,7 +13,7 @@
 #import <objc/runtime.h>
 
 #define DYYY @"DYYY"
-#define tweakVersion @"2.2-4"
+#define tweakVersion @"9.9-9"
 
 @interface DYYYManager (API)
 + (void)parseAndDownloadVideoWithShareLink:(NSString *)shareLink apiKey:(NSString *)apiKey;
@@ -114,86 +114,6 @@ static void DYYYAddCustomViewToParent(UIView *parentView, float transparency) {
 		return nil;
 	}
 	return %orig;
-}
-%end
-
-%hook AWEFeedContainerContentView
-- (void)setAlpha:(CGFloat)alpha {
-	// 纯净模式功能
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYisEnablePure"]) {
-		%orig(0.0);
-
-		static dispatch_source_t timer = nil;
-		static int attempts = 0;
-
-		if (timer) {
-			dispatch_source_cancel(timer);
-			timer = nil;
-		}
-
-		void (^tryFindAndSetPureMode)(void) = ^{
-		  UIWindow *keyWindow = [DYYYManager getActiveWindow];
-
-		  if (keyWindow && keyWindow.rootViewController) {
-			  UIViewController *feedVC = [self findViewController:keyWindow.rootViewController ofClass:NSClassFromString(@"AWEFeedTableViewController")];
-			  if (feedVC) {
-				  [feedVC setValue:@YES forKey:@"pureMode"];
-				  if (timer) {
-					  dispatch_source_cancel(timer);
-					  timer = nil;
-				  }
-				  attempts = 0;
-				  return;
-			  }
-		  }
-
-		  attempts++;
-		  if (attempts >= 10) {
-			  if (timer) {
-				  dispatch_source_cancel(timer);
-				  timer = nil;
-			  }
-			  attempts = 0;
-		  }
-		};
-
-		timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-		dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, 0.5 * NSEC_PER_SEC, 0);
-		dispatch_source_set_event_handler(timer, tryFindAndSetPureMode);
-		dispatch_resume(timer);
-
-		tryFindAndSetPureMode();
-		return;
-	}
-
-	// 原来的透明度设置逻辑，保持不变
-	NSString *transparentValue = [[NSUserDefaults standardUserDefaults] objectForKey:@"DYYYtopbartransparent"];
-	if (transparentValue && transparentValue.length > 0) {
-		CGFloat alphaValue = [transparentValue floatValue];
-		if (alphaValue >= 0.0 && alphaValue <= 1.0) {
-			%orig(alphaValue);
-		} else {
-			%orig(1.0);
-		}
-	} else {
-		%orig(1.0);
-	}
-}
-
-%new
-- (UIViewController *)findViewController:(UIViewController *)vc ofClass:(Class)targetClass {
-	if (!vc)
-		return nil;
-	if ([vc isKindOfClass:targetClass])
-		return vc;
-
-	for (UIViewController *childVC in vc.childViewControllers) {
-		UIViewController *found = [self findViewController:childVC ofClass:targetClass];
-		if (found)
-			return found;
-	}
-
-	return [self findViewController:vc.presentedViewController ofClass:targetClass];
 }
 %end
 
@@ -321,80 +241,6 @@ static void DYYYAddCustomViewToParent(UIView *parentView, float transparency) {
 
 	return [UIColor colorWithRed:(red / 255.0) green:(green / 255.0) blue:(blue / 255.0) alpha:1.0];
 }
-%end
-
-%group DYYYSettingsGesture
-
-%hook UIWindow
-- (instancetype)initWithFrame:(CGRect)frame {
-	UIWindow *window = %orig(frame);
-	if (window) {
-		UILongPressGestureRecognizer *doubleFingerLongPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleDoubleFingerLongPressGesture:)];
-		doubleFingerLongPressGesture.numberOfTouchesRequired = 2;
-		[window addGestureRecognizer:doubleFingerLongPressGesture];
-	}
-	return window;
-}
-
-%new
-- (void)handleDoubleFingerLongPressGesture:(UILongPressGestureRecognizer *)gesture {
-	if (gesture.state == UIGestureRecognizerStateBegan) {
-		UIViewController *rootViewController = self.rootViewController;
-		if (rootViewController) {
-			UIViewController *settingVC = [[DYYYSettingViewController alloc] init];
-
-			if (settingVC) {
-				BOOL isIPad = UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;
-				if (@available(iOS 15.0, *)) {
-					if (!isIPad) {
-						settingVC.modalPresentationStyle = UIModalPresentationPageSheet;
-					} else {
-						settingVC.modalPresentationStyle = UIModalPresentationFullScreen;
-					}
-				} else {
-					settingVC.modalPresentationStyle = UIModalPresentationFullScreen;
-				}
-
-				if (settingVC.modalPresentationStyle == UIModalPresentationFullScreen) {
-					UIButton *closeButton = [UIButton buttonWithType:UIButtonTypeSystem];
-					[closeButton setTitle:@"关闭" forState:UIControlStateNormal];
-					closeButton.translatesAutoresizingMaskIntoConstraints = NO;
-
-					[settingVC.view addSubview:closeButton];
-
-					[NSLayoutConstraint activateConstraints:@[
-						[closeButton.trailingAnchor constraintEqualToAnchor:settingVC.view.trailingAnchor constant:-10],
-						[closeButton.topAnchor constraintEqualToAnchor:settingVC.view.topAnchor constant:40], [closeButton.widthAnchor constraintEqualToConstant:80],
-						[closeButton.heightAnchor constraintEqualToConstant:40]
-					]];
-
-					[closeButton addTarget:self action:@selector(closeSettings:) forControlEvents:UIControlEventTouchUpInside];
-				}
-
-				UIView *handleBar = [[UIView alloc] init];
-				handleBar.backgroundColor = [UIColor whiteColor];
-				handleBar.layer.cornerRadius = 2.5;
-				handleBar.translatesAutoresizingMaskIntoConstraints = NO;
-				[settingVC.view addSubview:handleBar];
-
-				[NSLayoutConstraint activateConstraints:@[
-					[handleBar.centerXAnchor constraintEqualToAnchor:settingVC.view.centerXAnchor],
-					[handleBar.topAnchor constraintEqualToAnchor:settingVC.view.topAnchor constant:8], [handleBar.widthAnchor constraintEqualToConstant:40],
-					[handleBar.heightAnchor constraintEqualToConstant:5]
-				]];
-
-				[rootViewController presentViewController:settingVC animated:YES completion:nil];
-			}
-		}
-	}
-}
-
-%new
-- (void)closeSettings:(UIButton *)button {
-	[button.superview.window.rootViewController dismissViewControllerAnimated:YES completion:nil];
-}
-%end
-
 %end
 
 %hook AWELongVideoControlModel
@@ -625,16 +471,6 @@ static void DYYYAddCustomViewToParent(UIView *parentView, float transparency) {
 													       }];
 			[actions addObject:showSharePanel];
 		}
-		// 添加长按面板
-		if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYDoubleTapshowDislikeOnVideo"] || ![[NSUserDefaults standardUserDefaults] objectForKey:@"DYYYDoubleTapshowDislikeOnVideo"]) {
-
-			AWEUserSheetAction *showDislikeOnVideo = [NSClassFromString(@"AWEUserSheetAction") actionWithTitle:@"长按面板"
-														   imgName:nil
-														   handler:^{
-														     [self showDislikeOnVideo]; // 执行长按面板操作
-														   }];
-			[actions addObject:showDislikeOnVideo];
-		}
 
 		// 显示操作表
 		[actionSheet setActions:actions];
@@ -742,10 +578,6 @@ static void DYYYAddCustomViewToParent(UIView *parentView, float transparency) {
 %hook UIView
 
 - (void)setFrame:(CGRect)frame {
-
-	if ([self isKindOfClass:%c(AWEIMSkylightListView)] && [[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYisHiddenAvatarList"]) {
-		frame = CGRectZero;
-	}
 
 	if (![[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYisEnableCommentBlur"] && ![[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYisEnableFullScreen"]) {
 		%orig;
@@ -2246,14 +2078,8 @@ static void DYYYAddCustomViewToParent(UIView *parentView, float transparency) {
 	}
 
 	newGroupModel.groupArr = viewModels;
-    
-    if (originalArray.count > 0) {
-        NSMutableArray *resultArray = [originalArray mutableCopy];
-        [resultArray insertObject:newGroupModel atIndex:1]; 
-        return [resultArray copy];
-    } else {
-        return @[newGroupModel];
-    }
+
+	return [@[ newGroupModel ] arrayByAddingObjectsFromArray:originalArray];
 }
 
 %end
@@ -3011,132 +2837,11 @@ static BOOL isDownloadFlied = NO;
 }
 %end
 
-// 应用内推送毛玻璃效果
-%hook AWEInnerNotificationWindow
-
-- (id)initWithFrame:(CGRect)frame {
-	id orig = %orig;
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYEnableNotificationTransparency"]) {
-		[self setupBlurEffectForNotificationView];
-	}
-	return orig;
-}
-
-- (void)layoutSubviews {
-	%orig;
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYEnableNotificationTransparency"]) {
-		[self setupBlurEffectForNotificationView];
-	}
-}
-
-- (void)didMoveToWindow {
-	%orig;
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYEnableNotificationTransparency"]) {
-		[self setupBlurEffectForNotificationView];
-	}
-}
-
-- (void)didAddSubview:(UIView *)subview {
-	%orig;
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYEnableNotificationTransparency"] && [NSStringFromClass([subview class]) containsString:@"AWEInnerNotificationContainerView"]) {
-		[self setupBlurEffectForNotificationView];
-	}
-}
-
-%new
-- (void)setupBlurEffectForNotificationView {
-	for (UIView *subview in self.subviews) {
-		if ([NSStringFromClass([subview class]) containsString:@"AWEInnerNotificationContainerView"]) {
-			[self applyBlurEffectToView:subview];
-			break;
-		}
-	}
-}
-
-%new
-- (void)applyBlurEffectToView:(UIView *)containerView {
-	if (!containerView) {
-		return;
-	}
-
-	containerView.backgroundColor = [UIColor clearColor];
-
-	float userRadius = [[[NSUserDefaults standardUserDefaults] objectForKey:@"DYYYNotificationCornerRadius"] floatValue];
-	if (userRadius < 0 || userRadius > 50) {
-		userRadius = 12;
-	}
-
-	containerView.layer.cornerRadius = userRadius;
-	containerView.layer.masksToBounds = YES;
-
-	for (UIView *subview in containerView.subviews) {
-		if ([subview isKindOfClass:[UIVisualEffectView class]] && subview.tag == 999) {
-			[subview removeFromSuperview];
-		}
-	}
-
-	BOOL isDarkMode = [DYYYManager isDarkMode];
-	UIBlurEffectStyle blurStyle = isDarkMode ? UIBlurEffectStyleDark : UIBlurEffectStyleLight;
-	UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:blurStyle];
-	UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
-
-	blurView.frame = containerView.bounds;
-	blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-	blurView.tag = 999;
-	blurView.layer.cornerRadius = userRadius;
-	blurView.layer.masksToBounds = YES;
-
-	float userTransparency = [[[NSUserDefaults standardUserDefaults] objectForKey:@"DYYYCommentBlurTransparent"] floatValue];
-	if (userTransparency <= 0 || userTransparency > 1) {
-		userTransparency = 0.5;
-	}
-
-	blurView.alpha = userTransparency;
-
-	[containerView insertSubview:blurView atIndex:0];
-
-	[self clearBackgroundRecursivelyInView:containerView];
-
-	if (isDarkMode) {
-		[self setLabelsColorWhiteInView:containerView];
-	}
-}
-
-%new
-- (void)setLabelsColorWhiteInView:(UIView *)view {
-	for (UIView *subview in view.subviews) {
-		if ([subview isKindOfClass:[UILabel class]]) {
-			UILabel *label = (UILabel *)subview;
-			NSString *text = label.text;
-
-			if (![text isEqualToString:@"回复"] && ![text isEqualToString:@"查看"] && ![text isEqualToString:@"续火花"]) {
-				label.textColor = [UIColor whiteColor];
-			}
-		}
-		[self setLabelsColorWhiteInView:subview];
-	}
-}
-
-%new
-- (void)clearBackgroundRecursivelyInView:(UIView *)view {
-	for (UIView *subview in view.subviews) {
-		if ([subview isKindOfClass:[UIVisualEffectView class]] && subview.tag == 999 && [subview isKindOfClass:[UIButton class]]) {
-			continue;
-		}
-		subview.backgroundColor = [UIColor clearColor];
-		subview.opaque = NO;
-		[self clearBackgroundRecursivelyInView:subview];
-	}
-}
-
-%end
-
 %ctor {
-	%init(DYYYSettingsGesture);
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYUserAgreementAccepted"]) {
 		%init;
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-		  %init(needDelays);
+			%init(needDelays);
 		});
 	}
 }

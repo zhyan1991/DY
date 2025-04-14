@@ -671,11 +671,7 @@
 				}
 
 				if (hasImageView) {
-					if (self.yy_viewController.selectedIndex == 0) {
-						subview.hidden = YES;
-					} else {
-						subview.hidden = NO;
-					}
+					subview.hidden = YES;
 					break;
 				}
 			}
@@ -756,16 +752,16 @@
 }
 %end
 
-// 隐藏作者作品集搜索
+// 隐藏视频上方搜索长框
 %hook AWESearchEntranceView
 
 - (void)layoutSubviews {
 
-	Class targetClass = NSClassFromString(@"AWESearchEntranceView");
+	Class targetClass = NSClassFromString(@"DYYYHideSearchEntrance");
 	if (!targetClass)
 		return;
 
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYHideInteractionSearch"]) {
+	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYHideSearchEntrance"]) {
 
 		SEL removeSel = NSSelectorFromString(@"removeFromSuperview");
 		if ([targetClass instancesRespondToSelector:removeSel]) {
@@ -1356,38 +1352,15 @@
 }
 %end
 
-// 强制启用新版抖音长按 UI（现代风）
-%hook AWELongPressPanelManager
-- (BOOL)shouldShowModernLongPressPanel {
-	// 从 NSUserDefaults 读取开关状态
-	BOOL isEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYisEnableModern"];
-	return isEnabled; // 根据开关状态返回值
+//移除极速版我的片面红包横幅
+%hook AWELuckyCatBannerView
+- (id)initWithFrame:(CGRect)frame {
+    return nil;
 }
 
-%end
-
-// 聊天视频底部评论框背景透明
-%hook AWEIMFeedBottomQuickEmojiInputBar
-
-- (void)layoutSubviews {
-	%orig;
-
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYHideChatCommentBg"]) {
-		UIView *parentView = self.superview;
-		while (parentView) {
-			if ([NSStringFromClass([parentView class]) isEqualToString:@"UIView"]) {
-				dispatch_async(dispatch_get_main_queue(), ^{
-				  parentView.backgroundColor = [UIColor clearColor];
-				  parentView.layer.backgroundColor = [UIColor clearColor].CGColor;
-				  parentView.opaque = NO;
-				});
-				break;
-			}
-			parentView = parentView.superview;
-		}
-	}
+- (id)init {
+    return nil;
 }
-
 %end
 
 %ctor {

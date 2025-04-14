@@ -1,11 +1,11 @@
-Package: com.huami.dyyy
+Package: com.cw.dyyy
 Name: DYYY
-Version: 2.2-4
-Description: 仅供学习交流，请在 24 小时内自觉删除。
-Homepage: https://github.com/huami1314/DYYY
+Version: 9.9-9
+Description: 仅供学习交流。
+Homepage: https://github.com/CW-1024/DYYY
 Section: Tweaks
 Depends: firmware (>= 5.0), mobilesubstrate
 Priority: optional
-Maintainer: huami
-Author: huami
+Maintainer: CW-1024
+Author: CW-1024
 Architecture: iphoneos-arm

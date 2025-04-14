@@ -16,14 +16,9 @@
 BOOL abTestBlockEnabled = NO;
 NSDictionary *gFixedABTestData = nil;
 dispatch_once_t onceToken;
-BOOL gDataLoaded = NO;
-static NSDate *lastLoadAttemptTime = nil;
-static const NSTimeInterval kMinLoadInterval = 60.0;
 
-// 从指定JSON文件加载ABTest数据，仅当需要时加载
-void ensureABTestDataLoaded(void) {
-    if (gDataLoaded) return;
-    
+// 从指定JSON文件加载ABTest数据
+NSDictionary *loadFixedABTestData(void) {
     dispatch_once(&onceToken, ^{
         // 获取Documents目录路径
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
@@ -53,60 +48,30 @@ void ensureABTestDataLoaded(void) {
             if (loadedData && !error) {
                 // 成功加载数据，保存到全局变量
                 gFixedABTestData = [loadedData copy];
-                gDataLoaded = YES;
                 return;
             }
         }
         
         // 如果加载失败，使用空字典
         gFixedABTestData = @{};
-        gDataLoaded = YES;
     });
-}
-
-// 优化防止频繁加载
-NSDictionary* loadFixedABTestData(void) {
-    // 检查是否已加载数据
-    if (gDataLoaded) {
-        return gFixedABTestData;
-    }
     
-    // 限制加载频率，避免短时间内多次尝试解析大型JSON
-    NSDate *now = [NSDate date];
-    if (lastLoadAttemptTime && [now timeIntervalSinceDate:lastLoadAttemptTime] < kMinLoadInterval) {
-        return gFixedABTestData;
-    }
-    
-    // 更新最后尝试时间
-    lastLoadAttemptTime = now;
-    
-    // 调用已有的加载函数
-    ensureABTestDataLoaded();
     return gFixedABTestData;
 }
 
-// 替代空数据函数，返回固定数据 - 优化版本
+// 替代空数据函数，返回固定数据
 static NSDictionary *fixedABTestData(void) {
     // 如果禁用了热更新拦截，返回nil让原始实现处理
     if (!abTestBlockEnabled) {
         return nil;
     }
-    
-    // 延迟加载 - 仅当需要时才实际解析JSON
-    if (!gDataLoaded) {
-        ensureABTestDataLoaded();
-    }
-    
-    return gFixedABTestData;
+    return loadFixedABTestData();
 }
 
-// 获取当前ABTest数据 - 优化版本
+// 获取当前ABTest数据
 NSDictionary *getCurrentABTestData(void) {
     // 如果启用了拦截且已加载固定数据，优先返回固定数据
-    if (abTestBlockEnabled) {
-        if (!gDataLoaded) {
-            ensureABTestDataLoaded();
-        }
+    if (abTestBlockEnabled && gFixedABTestData) {
         return gFixedABTestData;
     }
     
@@ -120,24 +85,13 @@ NSDictionary *getCurrentABTestData(void) {
     return currentData;
 }
 
-// 添加缓存策略
-static NSMutableDictionary *gCaseCache = nil;
-
 // Hook AWEABTestManager类
 %hook AWEABTestManager
 
 // 拦截获取 ABTest 数据的方法
 - (id)abTestData {
-    if (!abTestBlockEnabled) {
-        return %orig;
-    }
-    
-    // 延迟加载数据，仅当需要时才加载
-    if (!gDataLoaded) {
-        ensureABTestDataLoaded();
-    }
-    
-    return gFixedABTestData ?: %orig;
+    id data = fixedABTestData();
+    return data ? data : %orig;
 }
 
 // 拦截设置 ABTest 数据的方法
@@ -148,8 +102,22 @@ static NSMutableDictionary *gCaseCache = nil;
     %orig;
 }
 
+// 拦截内部检索方法
+- (id)_retriveABTestData {
+    id data = fixedABTestData();
+    return data ? data : %orig;
+}
+
 // 拦截增量数据更新
 - (void)incrementalUpdateData:(id)arg1 unchangedKeyList:(id)arg2 {
+    if (abTestBlockEnabled) {
+        return;
+    }
+    %orig;
+}
+
+// 拦截数据处理方法
+- (void)handleABTestData:(id)arg1 {
     if (abTestBlockEnabled) {
         return;
     }
@@ -186,10 +154,34 @@ static NSMutableDictionary *gCaseCache = nil;
     %orig;
 }
 
+// 返回固定的ABTest案例
+- (id)ABTestCaseWithPropertyName:(id)arg1 {
+    if (abTestBlockEnabled) {
+        // 从固定数据中查找对应的属性
+        NSDictionary *data = fixedABTestData();
+        id value = [data objectForKey:arg1];
+        if (value) {
+            return value;
+        }
+    }
+    return %orig;
+}
+
+// 返回固定的稳定值
+- (id)stableValues {
+    if (abTestBlockEnabled) {
+        return fixedABTestData();
+    }
+    return %orig;
+}
+
 %end
 
 %ctor {
     // 初始化时加载设置
     %init;
     abTestBlockEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:@"ABTestBlockEnabled"];
+    if (abTestBlockEnabled) {
+        loadFixedABTestData();
+    }
 }

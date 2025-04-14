@@ -2078,14 +2078,8 @@ static void DYYYAddCustomViewToParent(UIView *parentView, float transparency) {
 	}
 
 	newGroupModel.groupArr = viewModels;
-    
-    if (originalArray.count > 0) {
-        NSMutableArray *resultArray = [originalArray mutableCopy];
-        [resultArray insertObject:newGroupModel atIndex:1]; 
-        return [resultArray copy];
-    } else {
-        return @[newGroupModel];
-    }
+
+	return [@[ newGroupModel ] arrayByAddingObjectsFromArray:originalArray];
 }
 
 %end

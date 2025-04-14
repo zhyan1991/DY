@@ -74,9 +74,9 @@
     UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
     [self addGestureRecognizer:panGesture];
     
-    // 重新添加长按手势
+    // 添加长按手势（长按时间为2秒）
     UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-    longPressGesture.minimumPressDuration = 0.5;
+    longPressGesture.minimumPressDuration = 2.0;  //长按设置为2秒
     [self addGestureRecognizer:longPressGesture];
     
     // 使用触摸事件而不是单击手势来处理点击

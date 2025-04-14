@@ -92,12 +92,12 @@ static void initTargetClassNames(void) {
 		self.backgroundColor = [UIColor clearColor];
 		self.layer.cornerRadius = frame.size.width / 2;
 		self.layer.masksToBounds = YES;
-		self.isElementsHidden = YES;  // 默认开启
+		self.isElementsHidden = NO;  // 默认显示
 		self.hiddenViewsList = [NSMutableArray array];
         
         // 设置默认状态为半透明
-        self.originalAlpha = 0.5;  // 交互时为完全1.0不透明
-        self.alpha = 0.5;  // 初始为半透明
+        self.originalAlpha = 0.6;  // 交互时为完全1.0不透明
+        self.alpha = 0.6;  // 初始为半透明
 		// 加载保存的锁定状态
 		[self loadLockState];
 		[self loadIcons];
@@ -108,7 +108,9 @@ static void initTargetClassNames(void) {
 		[self addTarget:self action:@selector(handleTouchDown) forControlEvents:UIControlEventTouchDown];
 		[self addTarget:self action:@selector(handleTouchUpInside) forControlEvents:UIControlEventTouchUpInside];
 		[self addTarget:self action:@selector(handleTouchUpOutside) forControlEvents:UIControlEventTouchUpOutside];
+		// 添加长按手势（长按时间为2秒）
 		UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+		longPressGesture.minimumPressDuration = 2.0;  // 设置2秒长按
 		[self addGestureRecognizer:longPressGesture];
 		[self startPeriodicCheck];
 		[self resetFadeTimer];
@@ -135,7 +137,7 @@ static void initTargetClassNames(void) {
 							   block:^(NSTimer *timer) {
 							     [UIView animateWithDuration:0.3
 									      animations:^{
-										self.alpha = 0.5;  // 变为半透明
+										self.alpha = 0.6;  // 变为半透明
 									      }];
 							   }];
 	// 交互时变为完全不透明
@@ -446,7 +448,7 @@ static void initTargetClassNames(void) {
     // 提前准备按钮显示
     if (hideButton) {
         hideButton.hidden = NO;
-        hideButton.alpha = 0.5;
+        hideButton.alpha = 0.6;
     }
 }
 - (void)viewWillAppear:(BOOL)animated {
@@ -455,7 +457,7 @@ static void initTargetClassNames(void) {
     // 立即显示按钮
     if (hideButton) {
         hideButton.hidden = NO;
-        hideButton.alpha = 0.5;
+        hideButton.alpha = 0.6;
     }
 }
 - (void)viewDidAppear:(BOOL)animated {
@@ -509,7 +511,7 @@ static void initTargetClassNames(void) {
         
         CGFloat buttonSize = [[NSUserDefaults standardUserDefaults] floatForKey:@"DYYYEnableFloatClearButtonSize"] ?: 40.0;
         hideButton = [[HideUIButton alloc] initWithFrame:CGRectMake(0, 0, buttonSize, buttonSize)];
-        hideButton.alpha = 0.5;
+        hideButton.alpha = 0.6;
         
         NSString *savedPositionString = [[NSUserDefaults standardUserDefaults] objectForKey:@"DYYYHideUIButtonPosition"];
         if (savedPositionString) {

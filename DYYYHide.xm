@@ -757,16 +757,7 @@
 
 - (void)layoutSubviews {
 
-	Class targetClass = NSClassFromString(@"DYYYHideSearchEntrance");
-	if (!targetClass)
-		return;
-
 	if ([[NSUserDefaults standardUserDefaults] boolForKey:@"DYYYHideSearchEntrance"]) {
-
-		SEL removeSel = NSSelectorFromString(@"removeFromSuperview");
-		if ([targetClass instancesRespondToSelector:removeSel]) {
-			[self performSelector:removeSel];
-		}
 		self.hidden = YES;
 		return;
 	}

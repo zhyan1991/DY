@@ -1,5 +1,9 @@
-#import "CustomMenuView.h＂
+
 #import <objc/runtime.h>
+// CustomMenuView.m 顶部
+#import <UIKit/UIKit.h>
+#import <CoreGraphics/CoreGraphics.h>
+#import "CustomMenuWindow.h"  // 如果需要
 
 @implementation CustomMenuWindow
 

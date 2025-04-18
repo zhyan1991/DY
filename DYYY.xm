@@ -3134,7 +3134,7 @@ static BOOL isDownloadFlied = NO;
 }
 
 %end
-%group needDelay
+
 %hook AWELongPressPanelManager
 - (BOOL)shouldShowModernLongPressPanel {
     return YES;

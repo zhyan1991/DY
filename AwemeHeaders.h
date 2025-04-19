@@ -675,3 +675,17 @@ typedef NS_ENUM(NSInteger, MediaType) {
 @interface AWEFakeProgressSliderView : UIView
 - (void)applyCustomProgressStyle;
 @end
+@interface CustomMenuView : UIViewController
+@end
+
+// CustomMenuView.m
+#import "CustomMenuView.h"
+
+@implementation CustomMenuView
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor whiteColor];
+}
+
+@end

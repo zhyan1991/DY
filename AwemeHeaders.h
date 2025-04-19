@@ -676,6 +676,4 @@ typedef NS_ENUM(NSInteger, MediaType) {
 - (void)applyCustomProgressStyle;
 @end
 
-@interface CustomMenuView : UIView
-@property (nonatomic, strong) UIView *view;
-@end
+

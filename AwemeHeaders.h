@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 #import <Photos/Photos.h>
-
+#import "CustomMenuView.h"
 #define DYYY 100
 
 typedef NS_ENUM(NSInteger, MediaType) {
@@ -677,10 +677,6 @@ typedef NS_ENUM(NSInteger, MediaType) {
 @end
 @interface CustomMenuView : UIViewController
 @end
-
-// CustomMenuView.m
-#import "CustomMenuView.h"
-
 @implementation CustomMenuView
 
 - (void)viewDidLoad {

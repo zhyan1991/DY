@@ -305,7 +305,7 @@ typedef NS_ENUM(NSInteger, MediaType) {
 @property (nonatomic, strong) AWEAwemeModel *awemeModel;
 @end
 
-@interface DYYYSettingViewController : UIViewController
+@interface CustomMenuView : UIViewController
 @end
 
 @interface AWEElementStackView : UIView

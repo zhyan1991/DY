@@ -1,10 +1,5 @@
-
-#import <objc/runtime.h>
 #import "CustomMenuView.h"
 #import <objc/runtime.h>
-#import <UIKit/UIKit.h>
-#import <CoreGraphics/CoreGraphics.h>
-
 
 @implementation CustomMenuWindow
 
@@ -212,13 +207,13 @@ avatarImageView.clipsToBounds = YES;
 [headerView addSubview:avatarImageView];
 
 UILabel *nameLabel = [[UILabel alloc] initWithFrame:CGRectMake(100, 25, menuWidth - 115, 20)];
-nameLabel.text = @"𝙓𝙐𝙐ᶻ";
+nameLabel.text = @"DYYY";
 nameLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightBold];
 [headerView addSubview:nameLabel];
 
 UILabel *infoLabel = [[UILabel alloc] initWithFrame:CGRectMake(100, 45, menuWidth - 115, 60)];
 infoLabel.numberOfLines = 4;
-infoLabel.text = @"插件版本V1.0-2\n本插件完全免费分享！\n如因本插件产生的任何！\n利益纠纷将由使用者自行承担！";
+infoLabel.text = @"插件版本V2.4-4\n本插件完全免费分享！\n如因本插件产生的任何！\n利益纠纷将由使用者自行承担！";
 infoLabel.font = [UIFont systemFontOfSize:12];
 [headerView addSubview:infoLabel];
 

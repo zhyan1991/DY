@@ -676,11 +676,6 @@ typedef NS_ENUM(NSInteger, MediaType) {
 - (void)applyCustomProgressStyle;
 @end
 
-@implementation CustomMenuView
-
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    self.view.backgroundColor = [UIColor whiteColor];
-}
-
+@interface CustomMenuView : UIView
+@property (nonatomic, strong) UIView *view;
 @end

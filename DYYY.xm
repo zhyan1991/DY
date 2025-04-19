@@ -341,7 +341,7 @@ static void DYYYAddCustomViewToParent(UIView *parentView, float transparency) {
 	if (gesture.state == UIGestureRecognizerStateBegan) {
 		UIViewController *rootViewController = self.rootViewController;
 		if (rootViewController) {
-			UIViewController *settingVC = [[CustomMenuView alloc] init];
+			UIViewController *settingVC = [[DYYYSettingViewController alloc] init];
 
 			if (settingVC) {
 				BOOL isIPad = UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;

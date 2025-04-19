@@ -11,7 +11,7 @@
 #import "DYYYManager.h"
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
-#import "CustomMenuView.h"
+
 #define DYYY @"DYYY"
 #define tweakVersion @"2.2-4"
 
